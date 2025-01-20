@@ -1,4 +1,4 @@
-# Weather App
+# Weatherly
 
 Aplikacja pogodowa umożliwiająca przeglądanie aktualnych danych pogodowych dla wybranych lokalizacji. Projekt powstał przy użyciu technologii front-endowych, takich jak ReactJS, i oferuje dynamiczny interfejs użytkownika oraz responsywną konstrukcję.
 
