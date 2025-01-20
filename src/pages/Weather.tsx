@@ -5,8 +5,8 @@ import animationData from "../assets/loading.json";
 import { WeatherIcon } from "weather-react-icons";
 import "weather-react-icons/lib/css/weather-icons.css";
 import { countries } from "../constants/countries";
-import { MdMyLocation } from 'react-icons/md';
-import { AiFillStar } from 'react-icons/ai';
+import { MdMyLocation } from "react-icons/md";
+import { AiFillStar } from "react-icons/ai";
 import { useFavouritesStore } from "../stores/favouritesStore";
 import { useWeatherData } from "../utils/weatherApiService";
 
@@ -56,13 +56,13 @@ export const WeatherPage = () => {
   const onSubmit = (data: FormData) => {
     if (data.useCoordinates) {
       if (data.lat.trim() && data.lon.trim()) {
-        fetchWeatherByCoords(data.lat.trim(), data.lon.trim(), "021ac140547cb2baca46321809c85ffa");
+        fetchWeatherByCoords(data.lat.trim(), data.lon.trim(), "65815816c390584a0953c5215c32acda");
       } else {
         console.error("Please enter valid coordinates.");
       }
     } else {
       if (data.city.trim()) {
-        fetchCityCoords(data.city.trim(), data.country.trim(), "021ac140547cb2baca46321809c85ffa");
+        fetchCityCoords(data.city.trim(), data.country.trim(), "65815816c390584a0953c5215c32acda");
       } else {
         console.error("Please enter a valid city name.");
       }
@@ -77,7 +77,11 @@ export const WeatherPage = () => {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
-        fetchWeatherByCoords(String(latitude), String(longitude), "021ac140547cb2baca46321809c85ffa");
+        fetchWeatherByCoords(
+          String(latitude),
+          String(longitude),
+          "65815816c390584a0953c5215c32acda"
+        );
       },
       () => {
         console.error("Failed to get your location. Please allow location access.");
@@ -90,16 +94,23 @@ export const WeatherPage = () => {
     return localTime;
   };
 
-  const isFavourite = (cityName: string | undefined) => {
-    return favourites.includes(cityName || "");
+  const isFavourite = (lat: string, lon: string) => {
+    return favourites.some(
+      (fav) => fav.lat === String(lat) && fav.lon === String(lon)
+    );
   };
 
-  const toggleFavourite = (cityName: string | undefined) => {
-    if (!cityName) return;
-    if (isFavourite(cityName)) {
-      removeFavourite(cityName);
+  const toggleFavourite = (lat: string, lon: string) => {
+    if (!lat || !lon) {
+      console.error("Invalid coordinates for toggleFavourite:", { lat, lon });
+      return;
+    }
+
+    const location = { lat: String(lat), lon: String(lon) };
+    if (isFavourite(String(lat), String(lon))) {
+      removeFavourite(location);
     } else {
-      addFavourite(cityName);
+      addFavourite(location);
     }
   };
 
@@ -179,11 +190,19 @@ export const WeatherPage = () => {
       )}
       {weatherData && weatherData.current ? (
         <div className="w-full max-w-4xl">
-          <div className={`p-6 rounded-xl shadow-lg flex justify-between items-start mb-16 ${isNight ? 'bg-gradient-to-r from-gray-900 via-gray-800 to-gray-700' : 'bg-gradient-to-r from-blue-500 via-blue-700 to-blue-900'}`}>
+          <div
+            className={`p-6 rounded-xl shadow-lg flex justify-between items-start mb-16 ${
+              isNight
+                ? "bg-gradient-to-r from-gray-900 via-gray-800 to-gray-700"
+                : "bg-gradient-to-r from-blue-500 via-blue-700 to-blue-900"
+            }`}
+          >
             <div className="w-full flex items-center gap-6">
               <div>
                 <p className="text-3xl font-bold mb-4">
-                  {weatherData.cityInfo?.name} ({weatherData.cityInfo?.country})
+                  {weatherData.cityInfo?.name || weatherData.lat + ", " + weatherData.lon} ({
+                    weatherData.cityInfo?.country || "Unknown"
+                  })
                 </p>
                 <div className="flex items-center gap-3">
                   <p className="text-4xl font-bold">
@@ -211,19 +230,45 @@ export const WeatherPage = () => {
                   <p>Pressure: {weatherData.current.pressure} hPa</p>
                 </div>
                 <div className="flex flex-col justify-center items-center">
-                  <p className={`font-bold ${isNight ? `text-blue-400` : `text-yellow-400`}`}>Sunrise: {getLocalTime(weatherData.current.sunrise, weatherData.timezone_offset).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                  <p className={`font-bold ${isNight ? `text-blue-400` : `text-yellow-400`}`}>Sunset: {getLocalTime(weatherData.current.sunset, weatherData.timezone_offset).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                  <p className="font-bold text-yellow-400">
+                    Sunrise: {" "}
+                    {getLocalTime(weatherData.current.sunrise, weatherData.timezone_offset).toLocaleTimeString(
+                      [],
+                      { hour: "2-digit", minute: "2-digit" }
+                    )}
+                  </p>
+                  <p className="font-bold text-yellow-400">
+                    Sunset: {" "}
+                    {getLocalTime(weatherData.current.sunset, weatherData.timezone_offset).toLocaleTimeString(
+                      [],
+                      { hour: "2-digit", minute: "2-digit" }
+                    )}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Latitude: {weatherData.lat || weatherData.cityInfo?.coord?.lat}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Longitude: {weatherData.lon || weatherData.cityInfo?.coord?.lon}
+                  </p>
                 </div>
               </div>
             </div>
             <button
-              onClick={() => toggleFavourite(weatherData.cityInfo?.name)}
-              className={`w-12 h-12 flex items-center justify-center rounded-full shadow-lg ${isFavourite(weatherData.cityInfo?.name) ? 'bg-logoYellow text-white hover:bg-yellow-600 transition-colors' : 'bg-gray-400 text-gray-700 hover:bg-gray-500 transition-colors'}`}
+              onClick={() =>
+                toggleFavourite(
+                  String(weatherData.lat || weatherData.cityInfo?.coord?.lat),
+                  String(weatherData.lon || weatherData.cityInfo?.coord?.lon)
+                )
+              }
+              className={`w-12 h-12 flex items-center justify-center rounded-full shadow-lg ${
+                isFavourite(weatherData.lat || weatherData.cityInfo?.coord?.lat, weatherData.lon || weatherData.cityInfo?.coord?.lon)
+                  ? "bg-logoYellow text-white hover:bg-yellow-600 transition-colors"
+                  : "bg-gray-400 text-gray-700 hover:bg-gray-500 transition-colors"
+              }`}
             >
               <AiFillStar size={24} />
             </button>
           </div>
-
           <h2 className="text-2xl font-bold mb-4">24-Hour Forecast</h2>
           <div className="overflow-x-auto mb-8">
             <div className="flex gap-4 pb-4">
