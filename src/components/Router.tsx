@@ -4,6 +4,7 @@ import { NotFoundPage } from "../pages/NotFound";
 import { WeatherPage } from "../pages/Weather";
 import { Layout } from "../internal/Layout";
 import { Links } from "../constants/links";
+import { FavouritesPage } from "../pages/Favourites";
 
 const router = createBrowserRouter([
   {
@@ -26,6 +27,10 @@ const router = createBrowserRouter([
         path: "*",
         element: <NotFoundPage />,
       },
+      {
+        path: `${Links.FAVOURITES}`,
+        element: <FavouritesPage />,
+      }
     ],
   },
 ]);

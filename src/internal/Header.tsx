@@ -17,12 +17,6 @@ export const Header = () => {
         <li className="hover:scale-110 transition-transform">
           <a href="/favourites" className="protected-link">Favourites</a>
         </li>
-        <li className="hover:scale-110 transition-transform">
-          <a href="#" className="protected-link">dummy</a>
-        </li>
-        <li className="hover:scale-110 transition-transform">
-          <a href="#" className="protected-link">dummy</a>
-        </li>
       </ul>
       <div className="flex items-center space-x-4">
         <a href="/" className="hidden lg:block bg-white text-gray-900 px-4 py-2 rounded-full text-sm font-bold hover:bg-gray-200">
