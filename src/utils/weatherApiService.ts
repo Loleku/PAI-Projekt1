@@ -12,7 +12,7 @@ export const useWeatherData = () => {
       );
       if (!geoResponse.ok) throw new Error("Failed to fetch city name");
       const geoData = await geoResponse.json();
-      
+
       if (Array.isArray(geoData) && geoData.length > 0) {
         return { name: geoData[0].name, country: geoData[0].country || "Unknown" };
       } else {
@@ -70,7 +70,7 @@ export const useWeatherData = () => {
       if (Array.isArray(geoData) && geoData.length > 0) {
         const { lat, lon, name, country } = geoData[0];
         await fetchWeatherByCoords(String(lat), String(lon), apiKey);
-        setWeatherData((prevData) => ({
+        setWeatherData((prevData: any) => ({
           ...prevData,
           cityInfo: { name, country: country || "Unknown", coord: { lat, lon } },
         }));
