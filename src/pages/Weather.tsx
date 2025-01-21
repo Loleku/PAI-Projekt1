@@ -27,10 +27,15 @@ export const getWeatherIcon = (id: number, iconCode: string, size: string = "nor
 export const WeatherPage = () => {
   const { city } = useParams<{ city: string }>();
   const { weatherData, loading, error, fetchWeatherByCoords, fetchCityCoords } = useWeatherData();
-
   const { addFavourite, removeFavourite, favourites } = useFavouritesStore();
 
-  const { register, handleSubmit, watch, setValue } = useForm<FormData>({
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useForm<FormData>({
     defaultValues: {
       city: city || "",
       country: "",
@@ -57,21 +62,16 @@ export const WeatherPage = () => {
     if (data.useCoordinates) {
       if (data.lat.trim() && data.lon.trim()) {
         fetchWeatherByCoords(data.lat.trim(), data.lon.trim(), "65815816c390584a0953c5215c32acda");
-      } else {
-        console.error("Please enter valid coordinates.");
       }
     } else {
       if (data.city.trim()) {
         fetchCityCoords(data.city.trim(), data.country.trim(), "65815816c390584a0953c5215c32acda");
-      } else {
-        console.error("Please enter a valid city name.");
       }
     }
   };
 
   const fetchUserLocation = () => {
     if (!navigator.geolocation) {
-      console.error("Geolocation is not supported by this browser.");
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -83,15 +83,12 @@ export const WeatherPage = () => {
           "65815816c390584a0953c5215c32acda"
         );
       },
-      () => {
-        console.error("Failed to get your location. Please allow location access.");
-      }
+      () => {}
     );
   };
 
   const getLocalTime = (timestamp: number, timezoneOffset: number) => {
-    const localTime = new Date((timestamp + timezoneOffset) * 1000);
-    return localTime;
+    return new Date((timestamp + timezoneOffset) * 1000);
   };
 
   const isFavourite = (lat: string, lon: string) => {
@@ -102,12 +99,10 @@ export const WeatherPage = () => {
 
   const toggleFavourite = (lat: string, lon: string) => {
     if (!lat || !lon) {
-      console.error("Invalid coordinates for toggleFavourite:", { lat, lon });
       return;
     }
-
     const location = { lat: String(lat), lon: String(lon) };
-    if (isFavourite(String(lat), String(lon))) {
+    if (isFavourite(lat, lon)) {
       removeFavourite(location);
     } else {
       addFavourite(location);
@@ -129,13 +124,24 @@ export const WeatherPage = () => {
           />
           <span>Search by coordinates</span>
         </label>
-        <input
-          type="text"
-          placeholder="Enter city name"
-          className="px-4 py-2 rounded bg-slate-700 text-white outline-none w-full max-w-md"
-          disabled={watchUseCoordinates}
-          {...register("city")}
-        />
+        <div className="flex flex-col items-center w-full max-w-md">
+          <input
+            type="text"
+            placeholder="Enter city name"
+            className="px-4 py-2 rounded bg-slate-700 text-white outline-none w-full"
+            disabled={watchUseCoordinates}
+            {...register("city", {
+              required: !watchUseCoordinates,
+              pattern: {
+                value: /^[a-zA-ZÀ-ž\s-]+$/,
+                message: "City name can contain only letters, spaces, and dashes",
+              },
+            })}
+          />
+          {errors.city && (
+            <p className="text-red-500 text-sm mt-1">{errors.city.message}</p>
+          )}
+        </div>
         <select
           className="px-4 py-2 rounded bg-slate-700 text-white outline-none w-full max-w-md"
           disabled={watchUseCoordinates}
@@ -149,20 +155,42 @@ export const WeatherPage = () => {
           ))}
         </select>
         <div className="flex gap-2 w-full max-w-md">
-          <input
-            type="text"
-            placeholder="Latitude"
-            className="px-4 py-2 rounded bg-slate-700 text-white outline-none w-1/2"
-            disabled={!watchUseCoordinates}
-            {...register("lat")}
-          />
-          <input
-            type="text"
-            placeholder="Longitude"
-            className="px-4 py-2 rounded bg-slate-700 text-white outline-none w-1/2"
-            disabled={!watchUseCoordinates}
-            {...register("lon")}
-          />
+          <div className="flex flex-col w-1/2">
+            <input
+              type="text"
+              placeholder="Latitude"
+              className="px-4 py-2 rounded bg-slate-700 text-white outline-none w-full"
+              disabled={!watchUseCoordinates}
+              {...register("lat", {
+                required: watchUseCoordinates,
+                pattern: {
+                  value: /^-?\d{1,2}(\.\d+)?$/,
+                  message: "Invalid latitude format",
+                },
+              })}
+            />
+            {errors.lat && (
+              <p className="text-red-500 text-sm mt-1">{errors.lat.message}</p>
+            )}
+          </div>
+          <div className="flex flex-col w-1/2">
+            <input
+              type="text"
+              placeholder="Longitude"
+              className="px-4 py-2 rounded bg-slate-700 text-white outline-none w-full"
+              disabled={!watchUseCoordinates}
+              {...register("lon", {
+                required: watchUseCoordinates,
+                pattern: {
+                  value: /^-?\d{1,3}(\.\d+)?$/,
+                  message: "Invalid longitude format",
+                },
+              })}
+            />
+            {errors.lon && (
+              <p className="text-red-500 text-sm mt-1">{errors.lon.message}</p>
+            )}
+          </div>
         </div>
         <div className="flex gap-4 mt-4">
           <button type="submit" className="px-4 py-2 rounded bg-logoYellow text-black font-semibold">
@@ -231,18 +259,18 @@ export const WeatherPage = () => {
                 </div>
                 <div className="flex flex-col justify-center items-center">
                   <p className="font-bold text-yellow-400">
-                    Sunrise: {" "}
-                    {getLocalTime(weatherData.current.sunrise, weatherData.timezone_offset).toLocaleTimeString(
-                      [],
-                      { hour: "2-digit", minute: "2-digit" }
-                    )}
+                    Sunrise:{" "}
+                    {getLocalTime(weatherData.current.sunrise, weatherData.timezone_offset).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </p>
                   <p className="font-bold text-yellow-400">
-                    Sunset: {" "}
-                    {getLocalTime(weatherData.current.sunset, weatherData.timezone_offset).toLocaleTimeString(
-                      [],
-                      { hour: "2-digit", minute: "2-digit" }
-                    )}
+                    Sunset:{" "}
+                    {getLocalTime(weatherData.current.sunset, weatherData.timezone_offset).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </p>
                   <p className="text-sm text-gray-500">
                     Latitude: {weatherData.lat || weatherData.cityInfo?.coord?.lat}
@@ -275,18 +303,15 @@ export const WeatherPage = () => {
               {weatherData.hourly.slice(0, 24).map((hour: any, index: number) => (
                 <div key={index} className="flex-shrink-0 w-32 p-4 bg-slate-700 rounded-lg shadow-md">
                   <p className="font-semibold">
-                    {getLocalTime(hour.dt, weatherData.timezone_offset).toLocaleTimeString('en-US', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      hour12: false
+                    {getLocalTime(hour.dt, weatherData.timezone_offset).toLocaleTimeString("en-US", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      hour12: false,
                     })}
                   </p>
                   <div className="flex items-center justify-between my-2">
                     <p className="text-xl">{Math.floor(hour.temp)}°C</p>
-                    {getWeatherIcon(
-                      hour.weather[0]?.id,
-                      hour.weather[0]?.icon
-                    )}
+                    {getWeatherIcon(hour.weather[0]?.id, hour.weather[0]?.icon)}
                   </div>
                   <div className="mt-2 text-sm">
                     <p>Humidity: {hour.humidity}%</p>
@@ -301,20 +326,15 @@ export const WeatherPage = () => {
             {weatherData.daily.slice(1, 8).map((day: any, index: number) => (
               <div key={index} className="p-4 bg-slate-700 rounded-lg shadow-md">
                 <p className="font-semibold">
-                  {getLocalTime(day.dt, weatherData.timezone_offset).toLocaleDateString('en-US', { weekday: 'short' })}
+                  {getLocalTime(day.dt, weatherData.timezone_offset).toLocaleDateString("en-US", { weekday: "short" })}
                 </p>
                 <div className="flex items-center justify-between my-2">
                   <p className="text-xl">
                     {Math.floor(day.temp.max)}°C / {Math.floor(day.temp.min)}°C
                   </p>
-                  {getWeatherIcon(
-                    day.weather[0]?.id,
-                    day.weather[0]?.icon
-                  )}
+                  {getWeatherIcon(day.weather[0]?.id, day.weather[0]?.icon)}
                 </div>
-                <p className="capitalize text-sm">
-                  {day.weather[0]?.description}
-                </p>
+                <p className="capitalize text-sm">{day.weather[0]?.description}</p>
                 <div className="mt-2 text-sm">
                   <p>Humidity: {day.humidity}%</p>
                   <p>Wind: {day.wind_speed} m/s</p>
